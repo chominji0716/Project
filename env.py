@@ -10,13 +10,15 @@ Action = int
 
 
 @dataclass
+# 한 번 행동한 뒤 환경이 돌려주는 결과 묶음
 class EnvStepResult:
-    observation: Dict[str, float]
-    reward: float
-    done: bool
-    info: Dict[str, Any]
+    observation: Dict[str, float]  # 현재 센서값
+    reward: float                  # 행동에 대한 보상
+    done: bool                     # 에피소드 종료 여부
+    info: Dict[str, Any]           # 디버깅용 상세 정보
 
 
+# 행동과 방향 정의
 class AbstractRescueGridEnv:
     """
     Abstract grid environment for the current recurrent memristive SNN project.
@@ -38,29 +40,16 @@ class AbstractRescueGridEnv:
         * victim_signal
     - Later you can replace each field with a more realistic sensor model
       without changing the outer RL / SNN loop too much.
-
-    Action convention
-    -----------------
-    0: move forward
-    1: turn left
-    2: turn right
-    3: stay
-
-    Heading convention
-    ------------------
-    0: up
-    1: right
-    2: down
-    3: left
-    """
-
-    ACTION_NAMES = {
+      
+# 행동
+    ACTION_NAMES = {     
         0: "forward",
         1: "turn_left",
         2: "turn_right",
         3: "stay",
     }
 
+# 방향
     HEADING_NAMES = {
         0: "up",
         1: "right",
@@ -75,14 +64,14 @@ class AbstractRescueGridEnv:
         max_steps: int = 50,
         obstacle_density: float = 0.12,
         seed: Optional[int] = None,
-        victim_signal_sigma: float = 2.2,
-        reward_step_penalty = 0.0,
-        reward_collision = -0.05,
-        reward_closer = 0.10,
-        reward_farther = -0.03,
-        reward_found_victim = 3.0,
-        use_random_heading_on_reset: bool = True,
-    ) -> None:
+        victim_signal_sigma: float = 2.2,                 # 피해자 신호의 퍼짐 정도
+        reward_step_penalty = 0.0,                   
+        reward_collision = -0.05,                         # 충돌 시 패널티
+        reward_closer = 0.10,                             # 피해자에게 가까워졌을 때 보상
+        reward_farther = -0.03,                           # 피해자로부터 멀어졌을 때 패널티
+        reward_found_victim = 3.0,                        # 피해자 발견 시 보상
+        use_random_heading_on_reset: bool = True,         # 리셋 시 로봇이 바라보는 방향의 랜덤성
+    ) -> None: 
         if width < 4 or height < 4:
             raise ValueError("width and height should both be >= 4")
         if max_steps < 1:
@@ -121,19 +110,19 @@ class AbstractRescueGridEnv:
     # ------------------------------------------------------------------
     # Reset / episode creation
     # ------------------------------------------------------------------
-    def reset(self) -> Dict[str, float]:
-        self.episode_index += 1
-        self.step_count = 0
-        self.done = False
+    def reset(self) -> Dict[str, float]:     # 한 에피소드를 새로 시작할 때 리셋하는 함수
+        self.episode_index += 1              # 에피소드 index 증가
+        self.step_count = 0                  # step 수 초기화
+        self.done = False                    # 종료 여부 false로 전환
 
-        self.grid.fill(0)
+        self.grid.fill(0)                    # 그리드 비우기
 
         # Build obstacles first.
-        n_cells = self.width * self.height
-        n_obstacles = int(round(self.obstacle_density * n_cells))
+        n_cells = self.width * self.height         
+        n_obstacles = int(round(self.obstacle_density * n_cells))     
 
-        obstacle_coords = set()
-        while len(obstacle_coords) < n_obstacles:
+        obstacle_coords = set()               # 장애물 좌표를 담을 집합
+        while len(obstacle_coords) < n_obstacles:     
             r = int(self.rng.integers(0, self.height))
             c = int(self.rng.integers(0, self.width))
             obstacle_coords.add((r, c))
